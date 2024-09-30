@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "cats-api"
+version = "0.1.0"
+description = ""
+authors = ["rodion <rpadakov@yandex.ru>"]
+license = "MIT License"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+Django = "^5.1.1"
+djoser = "^2.2.3"
+pytest-django = "^4.9.0"
+
+[tool.poetry.group.dev.dependencies]
+isort = "^5.13.2"
+flake8 = "^7.1.1"
+
+[tool.poetry.group.testing.dependencies]
+pytest = "^8.3.3"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "cats_api.settings"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
