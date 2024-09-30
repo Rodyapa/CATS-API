@@ -8,13 +8,29 @@ def api_client():
 
 
 @pytest.fixture
-def user_tokens(api_client):
+def test_password():
+    return 'strong-test-pass'
+
+
+@pytest.fixture
+def create_user(db, django_user_model, test_password):
+    def make_user(**kwargs):
+        kwargs['password'] = test_password
+        if 'username' not in kwargs:
+            kwargs['username'] = 'username'
+        return django_user_model.objects.create_user(**kwargs)
+    return make_user
+
+
+@pytest.fixture
+def user_tokens(api_client, create_user, test_password):
     '''Log in the user and store the refresh token.'''
     # Arrange
     url = '/api/auth/jwt/create/'
+    create_user()
     user_credentials = {
         'username': 'username',
-        'password': 'Strong_password1',
+        'password': test_password,
     }
     # Act
     response = api_client.post(url, user_credentials)
@@ -28,13 +44,15 @@ def user_tokens(api_client):
     }
 
 
-def test_token_create(api_client):
+@pytest.mark.django_db
+def test_token_create(api_client, create_user, test_password):
     '''Test JWT token creation.'''
     # Arrange
     url = '/api/auth/jwt/create/'
+    create_user()
     user_credentials = {
         'username': 'username',
-        'password': 'Strong_password1',
+        'password': test_password,
     }
     # Act
     response = api_client.post(url, user_credentials)
@@ -44,6 +62,7 @@ def test_token_create(api_client):
     assert 'refresh' in response.data, 'Response must contain refresh token'
 
 
+@pytest.mark.django_db
 def test_token_refresh(api_client, user_tokens):
     '''Test refreshing the JWT token.'''
     # Arrange
@@ -58,6 +77,7 @@ def test_token_refresh(api_client, user_tokens):
     assert 'access' in response.data, 'Response must contain access token'
 
 
+@pytest.mark.django_db
 def test_token_verify(api_client, user_tokens):
     '''Test verifying the JWT token.'''
     # Arrange
