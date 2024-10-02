@@ -1,8 +1,78 @@
 import pytest
-from cats.models import Breed
+from cats.models import Breed, Cat, Color
 
 from .test_utils import (assert200Response, assert400Response,
                          assertJSONFormatResponse, assertPaginatedResponse)
+
+
+@pytest.fixture
+def precreated_breeds():
+    '''
+    Create three breed instances and returns breed instances.
+    '''
+    breeds_infos = [
+        {'name': 'unique_breed'},
+        {'name': 'myth_breed'},
+        {'name': 'ordinary_breed'}
+    ]
+    breeds_list = [
+        Breed(**breed_info)
+        for breed_info in breeds_infos
+    ]
+    breeds = Breed.objects.bulk_create(breeds_list)
+    return breeds
+
+
+@pytest.fixture
+def precreated_colors():
+    '''
+    Create three colors instances and returns color instances.
+    '''
+    colors_infos = [
+        {'name': 'blue'},
+        {'name': 'grey'},
+        {'name': 'black'}
+    ]
+    colors_list = [
+        Color(**color_info)
+        for color_info in colors_infos
+    ]
+    colors = Color.objects.bulk_create(colors_list)
+    return colors
+
+
+@pytest.fixture
+def precreated_cats(create_user, precreated_breeds, precreated_colors):
+    '''
+    Create three cat instances and return theirs info as list of dicts.
+    '''
+    user = create_user()
+    cats_infos = [
+        {'name': 'TommyTheCat',
+            'age': 30,
+            'description': 'A strange one.',
+            'breed': precreated_breeds[0],
+            'color': precreated_colors[0],
+            'owner': user},
+        {'name': 'Garfield',
+            'age': 200,
+            'description': 'A fat one.',
+            'breed': precreated_breeds[1],
+            'color': precreated_colors[1],
+            'owner': user},
+        {'name': 'Cheshire',
+            'age': 300,
+            'description': 'A mysterious one.',
+            'breed': precreated_breeds[2],
+            'color': precreated_colors[2],
+            'owner': user}
+    ]
+    cats = [
+        Cat(**cat_info)
+        for cat_info in cats_infos
+    ]
+    Cat.objects.bulk_create(cats)
+    return cats_infos
 
 
 class TestBreedAPI:
@@ -17,23 +87,6 @@ class TestBreedAPI:
     '''
     BASE_URL = '/api/breeds/'
     BreedModel = Breed
-
-    @pytest.fixture
-    def precreated_breeds(self):
-        '''
-        Create three breed instances and return theirs info as list of dicts.
-        '''
-        breeds_infos = [
-            {'name': 'unique_breed'},
-            {'name': 'myth_breed'},
-            {'name': 'ordinary_breed'}
-        ]
-        breeds = [
-            self.BreedModel(**breed_info)
-            for breed_info in breeds_infos
-        ]
-        self.BreedModel.objects.bulk_create(breeds)
-        return breeds_infos
 
     @pytest.mark.django_db
     def test_get_list_of_breeds(self, client, precreated_breeds):
@@ -93,7 +146,7 @@ class TestBreedAPI:
         response = client.post(url, post_data, format='json')
         # Assert
         assert400Response(response, message=('Breed must not be created '
-                                             'because reuqest data has '
+                                             'because request data has '
                                              f'{error_reason}'))
 
     @pytest.mark.parametrize(
@@ -141,8 +194,7 @@ class TestBreedAPI:
         assert response.status_code == expected_status
 
 
-"""
-class CatAPITest:
+class TestCatAPI:
     '''
     Test endpoints related to cats instances.
 
@@ -159,53 +211,55 @@ class CatAPITest:
     BASE_URL = '/api/cats/'
     CatModel = Cat
 
-    @pytest.fixture
-    def pre_created_cats(self, create_user):
-        '''
-        Create three cat instances and return theirs info as list of dicts.
-        '''
-        user = create_user()
-        cats_infos = {
-            {'name': 'TommyTheCat',
-             'age': 30,
-             'description': 'A strange one.',
-             'owner': user},
-            {'name': 'Garfield',
-             'age': 200,
-             'description': 'A fat one.',
-             'owner': user},
-            {'name': 'Cheshire',
-             'age': 300,
-             'description': 'A mysterious one.',
-             'owner': user}
-        }
-        cats = [
-            Cat(name=cat_info['name'],
-                age=cat_info['age'],
-                description=cat_info['description'],
-                owner=cat_info['owner'])
-            for cat_info in cats_infos
-        ]
-        Cat.objects.bulk_create(cats)
-        return cats_infos
-
-    def test_get_list_of_cat_instances(self, client, pre_created_cats):
+    def test_get_list_of_cat_instances(self, client, precreated_cats):
         # Arrange
         url = self.BASE_URL
         # Act
         response = client.get(url)
         # Assert
-        assert response.status_code == 200
-        assert 'results' in response.data, ('Response must contain "results" '
-                                            'key ')
-        assert len(response.data['results']) == 3, ('There should be 3 cat '
-                                                    'instances in the results')
+        assert200Response(response)
+        assertJSONFormatResponse(response)
+        assertPaginatedResponse(response, expected_count=3)
 
-        expected_names = [cat_info['name'] for cat_info in pre_created_cats]
+        expected_names = [cat_info['name'] for cat_info in precreated_cats]
         returned_names = [cat['name'] for cat in response.data['results']]
         assert sorted(returned_names) == sorted(expected_names), (
             'Returned cat names do not match expected ones')
 
+    def test_owner_field_is_string(self, client, precreated_cats):
+        '''Test that owner field in each instance of cat returns as a string'''
+        # Arrange
+        url = self.BASE_URL
+        # Act
+        response = client.get(url)
+        # Assert
+        assert200Response(response)
+        assertJSONFormatResponse(response)
+        assertPaginatedResponse(response, expected_count=3)
+
+        returned_owner = response.data['results'][0]['owner']
+        assert isinstance(returned_owner, str), (
+            '"Owner" field must be string, not link or id'
+        )
+
+    def test_color_field_is_string(self, client, precreated_cats):
+        '''Test that color field in each instance of cat returns as a string'''
+        # Arrange
+        url = self.BASE_URL
+        # Act
+        response = client.get(url)
+        # Assert
+        assert200Response(response)
+        assertJSONFormatResponse(response)
+        assertPaginatedResponse(response, expected_count=3)
+
+        returned_color = response.data['results'][0]['color']
+        assert isinstance(returned_color, str), (
+            '"Owner" field must be string, not link or id'
+        )
+
+
+    """
     @pytest.mark.parametrize("url, expected_status_code, err_msg", [
         ('api/cats/1/', 200, 'User must be able to get specific cat info'),
         ('api/cats/9999/', 404, 'User must get 404 error when'
@@ -248,4 +302,4 @@ class CatAPITest:
     ])
     def test_make_a_new_cat_instance_with_invalid_data(
     )
-"""
+    """

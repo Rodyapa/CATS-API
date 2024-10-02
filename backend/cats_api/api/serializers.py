@@ -1,10 +1,10 @@
-from cats.models import Breed
+from cats.models import Breed, Cat
 from django.conf import settings
 from rest_framework import serializers
 
 
 class BreedSerializer(serializers.ModelSerializer):
-    """Serializer for Cats model instances."""
+    """Serializer for Breed model instances."""
     class Meta:
         model = Breed
         fields = '__all__'
@@ -18,3 +18,14 @@ class BreedSerializer(serializers.ModelSerializer):
                     "A breed with this name already "
                     "exists (case-insensitive).")
         return value
+
+
+class CatSerializer(serializers.ModelSerializer):
+    """Serializer for Cat model instances."""
+    breed = serializers.StringRelatedField()
+    color = serializers.StringRelatedField()
+    owner = serializers.StringRelatedField()
+
+    class Meta:
+        model = Cat
+        fields = '__all__'

@@ -1,7 +1,8 @@
 from api.permissions import IsStaffOrReadonly
-from api.serializers import BreedSerializer
-from cats.models import Breed
+from api.serializers import BreedSerializer, CatSerializer
+from cats.models import Breed, Cat
 from rest_framework import mixins, viewsets
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
 
 class BreedViewSet(mixins.ListModelMixin,
@@ -10,7 +11,7 @@ class BreedViewSet(mixins.ListModelMixin,
                    mixins.UpdateModelMixin,
                    viewsets.GenericViewSet):
     """
-    View set that process requests related to cats instances.
+    View set that process requests related to cats breed instances.
 
     - Get list of all instances
     - Create a new breed instance (Only for Staff Users)
@@ -22,3 +23,17 @@ class BreedViewSet(mixins.ListModelMixin,
     serializer_class = BreedSerializer
     permission_classes = (IsStaffOrReadonly, )
     http_method_names = ['get', 'post', 'put', 'delete']
+
+
+class CatsViewSet(mixins.ListModelMixin,
+                  viewsets.GenericViewSet):
+    """
+    View set that process requests related to cats instances.
+
+    - Get list of all instances
+    """
+
+    queryset = Cat.objects.all()
+    serializer_class = CatSerializer
+    permission_classes = (IsAuthenticatedOrReadOnly, )
+    http_method_names = ['get',]

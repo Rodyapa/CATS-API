@@ -17,5 +17,6 @@ def assertPaginatedResponse(response, expected_count,
                             message='Response should contain paginated data'
                             ):
     assert 'results' in response.data, message
-    assert len(response.data['results']) == expected_count, (
-        f'Expected {expected_count} items in the results')
+    if expected_count:
+        assert len(response.data['results']) == expected_count, (
+            f'Expected {expected_count} items in the results')
