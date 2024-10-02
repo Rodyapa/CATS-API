@@ -1,5 +1,5 @@
 from cats.constants import DESCRIPTION_MAX_LENGTH, MAX_CAT_AGE, MAX_NAME
-from cats.validators import TextValidator
+from cats.validators import TextValidator, TitleValidator
 from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator
 from django.db import models
@@ -12,7 +12,8 @@ class Cat(models.Model):
         verbose_name='Кличка',
         max_length=MAX_NAME,
         null=False,
-        blank=False
+        blank=False,
+        validators=(TitleValidator(), )
     )
     color = models.ForeignKey(
         verbose_name='Цвет',
@@ -70,7 +71,8 @@ class Breed(models.Model):
         max_length=MAX_NAME,
         unique=True,
         null=False,
-        blank=False
+        blank=False,
+        validators=(TitleValidator(), )
     )
 
     def __str__(self) -> str:
@@ -79,6 +81,13 @@ class Breed(models.Model):
     def save(self, *args, **kwargs) -> None:
         self.name = self.name.lower()
         return super().save(*args, **kwargs)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                models.functions.Lower('name'), name='unique_lower_name')
+        ]
+        ordering = ('name', )
 
 
 class Color(models.Model):
