@@ -1,10 +1,10 @@
 import pytest
 from rest_framework.test import APIClient
-from rest_framework.authtoken.models import Token
 
 '''
 Fixtures of this file are used among the all test modules.
 '''
+
 
 @pytest.fixture
 def api_client():
@@ -49,6 +49,7 @@ def api_client_with_credentials(db, create_user, api_client):
         api_client.force_authenticate(user=user)
         return api_client
     return make_client()
+
 
 @pytest.fixture
 def api_staff_client_with_credentials(db, create_user, api_client):

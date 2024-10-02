@@ -1,7 +1,7 @@
-from rest_framework import viewsets, mixins
-from cats.models import Breed
 from api.permissions import IsStaffOrReadonly
 from api.serializers import BreedSerializer
+from cats.models import Breed
+from rest_framework import mixins, viewsets
 
 
 class BreedViewSet(mixins.ListModelMixin,

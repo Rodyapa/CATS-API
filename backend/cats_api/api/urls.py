@@ -1,6 +1,6 @@
+from api.views import BreedViewSet
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from api.views import BreedViewSet
 
 app_name = 'api'
 

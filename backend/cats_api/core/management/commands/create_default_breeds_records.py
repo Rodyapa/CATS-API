@@ -1,5 +1,5 @@
-from django.core.management.base import BaseCommand
 from core.csv_loaders import breeds_import
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):

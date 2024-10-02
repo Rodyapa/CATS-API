@@ -1,8 +1,8 @@
 import pytest
 from cats.models import Breed
+
 from .test_utils import (assert200Response, assert400Response,
-                         assertJSONFormatResponse,
-                         assertPaginatedResponse)
+                         assertJSONFormatResponse, assertPaginatedResponse)
 
 
 class TestBreedAPI:
@@ -83,7 +83,8 @@ class TestBreedAPI:
          ]
     )
     def test_cannot_create_breed_instance_with_invalid_data(
-        self, api_staff_client_with_credentials, precreated_breeds, post_data, error_reason):
+            self, api_staff_client_with_credentials,
+            precreated_breeds, post_data, error_reason):
         '''Test that request with invalid data will recieve error reponse.'''
         # Arrange
         url = self.BASE_URL
@@ -138,6 +139,7 @@ class TestBreedAPI:
         response = user_client.put(url, data)
         # Assert
         assert response.status_code == expected_status
+
 
 """
 class CatAPITest:
@@ -245,6 +247,5 @@ class CatAPITest:
     ('/api/cars/9999/', 404,)
     ])
     def test_make_a_new_cat_instance_with_invalid_data(
-            
     )
 """

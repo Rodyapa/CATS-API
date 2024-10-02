@@ -1,7 +1,6 @@
 from cats.models import Breed
-from rest_framework import serializers
-import os
 from django.conf import settings
+from rest_framework import serializers
 
 
 class BreedSerializer(serializers.ModelSerializer):
@@ -11,8 +10,8 @@ class BreedSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def validate_name(self, value):
-        if (settings.DATABASES['default']['ENGINE']
-            == 'django.db.backends.sqlite3'):
+        if (settings.DATABASES['default']['ENGINE'] ==
+                'django.db.backends.sqlite3'):
             # Only apply this validation for SQLite (local development)
             if Breed.objects.filter(name__iexact=value.lower()).exists():
                 raise serializers.ValidationError(
