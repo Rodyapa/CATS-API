@@ -586,7 +586,7 @@ class TestScoreAPI:
         user_client = request.getfixturevalue(user_client)
         response = user_client.put(url, new_score_data)
         assert response.status_code == expected_status_code, err_message
-    
+
     @pytest.mark.parametrize(
         'user_client, expected_status_code, err_message',
         [
