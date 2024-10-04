@@ -24,5 +24,6 @@ docs_urlpatterns = [
 ]
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('api.urls'), name='api')
+    path('api/', include('api.urls'), name='api'),
+    path('docs/', include (docs_urlpatterns), name='docs')
 ]
