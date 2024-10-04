@@ -1,9 +1,10 @@
 import pytest
 from cats.models import Breed, Cat, Color
 from rest_framework_simplejwt.tokens import AccessToken
+
 from .test_utils import (assert200Response, assert204Response,
-                         assert400Response,
-                         assertJSONFormatResponse, assertPaginatedResponse)
+                         assert400Response, assertJSONFormatResponse,
+                         assertPaginatedResponse)
 
 
 @pytest.fixture
@@ -340,6 +341,7 @@ class TestCatAPI:
         # Arrange
         assert response.status_code == expected_status_code, err_message
 
+    @pytest.mark.django_db
     def test_new_created_cat_instance_have_request_user_as_owner(
             self, auto_login_user, precreated_colors,
             precreated_breeds):
@@ -364,48 +366,75 @@ class TestCatAPI:
             'New cat instance must have request user as owner field value'
         )
 
-
-    """
-    @pytest.mark.parametrize("url, expected_status_code, 'err_msg", [
-        ('api/cats/1/', 200, 'User must be able to get specific cat info'),
-        ('api/cats/9999/', 404, 'User must get 404 error when'
-                              'trying to get non-existing cat')
-    ])
-    def test_get_a_specific_cat_instance(self, client, pre_created_cats):
-        # Act
-        response = client.get(url)
-        # Asserts
-        assert response.status_code == expected_status_code
-        if expected_status_code == 200:
-            assert pre_created_cats[0] in response.data['results'], (
-                'Specific cat info must to be in response data.'
-            )
-
-
-    def test_make_a_new_cat_instance_with_valid_data(
-            self, auto_login_user, client):
-        # Arrange
-        authenticated_client, user = auto_login_user()
-        url = self.BASE_URL
-        cat_data = {
-            'name': 'Felix The Cat',
-            'age': 100,
-            'description': 'An old one cat.',
-        }
-        # Act
-        response = client.get(url, cat_data)
-        # Assert
-        assert response.status_code == 204
-        new_created_cat = self.CatModel.objects.get(name=cat_data['name'])
-        assert new_created_cat.age == cat_data['age']
-        assert new_created_cat.description == cat_data['description']
-        assert new_created_cat.owner == user, ('Request user must  be'
-                                               'a cat owner.')
-
-    @pytest.mark.parametrize("url, expected_status_code, err_msg",[
-    ('/api/cats/1/', 200, 'User must be able to get info about existing car'),
-    ('/api/cars/9999/', 404,)
-    ])
-    def test_make_a_new_cat_instance_with_invalid_data(
+    @pytest.mark.parametrize(
+        'user_client, expected_status_code, err_message',
+        [
+            ('client', 401, 'Anonymous cannot update cat instance'),
+            ('api_staff_client_with_credentials', 200,
+             'Staff User can update cat instance'),
+            ('api_client_with_credentials', 403,
+             'User cannot update another user\'s cat instance')
+        ]
     )
-    """
+    @pytest.mark.parametrize('is_partial', [True, False])
+    @pytest.mark.django_db
+    def test_update_cat_instance(self, precreated_breeds, precreated_colors,
+                                 request, user_client, auto_login_user,
+                                 expected_status_code, err_message,
+                                 is_partial):
+        # Arrange
+        _, cat_owner = auto_login_user()
+        cat_data = {
+            "name": "Bill Murray",
+            "age": "299",
+            'description': "Such a funny cat.",
+            "color": precreated_colors[0],
+            "breed": precreated_breeds[0],
+            "owner": cat_owner
+        }
+        new_cat_data = {
+            "age": 280  # Only updating the age for PATCH
+        }
+        cat_on_update = self.CatModel.objects.create(**cat_data)
+        url = f'{self.BASE_URL}{cat_on_update.id}/'
+
+        # Act
+        user_client = request.getfixturevalue(user_client)
+        if is_partial:  # PATCH request
+            response = user_client.patch(url, new_cat_data)
+        else:
+            response = user_client.put(url, {**cat_data, **new_cat_data})
+        # Assert
+        assert response.status_code == expected_status_code, err_message
+
+    @pytest.mark.parametrize('is_partial', [True, False])
+    @pytest.mark.django_db
+    def test_user_can_update_his_own_cat(
+            self, precreated_breeds, precreated_colors, auto_login_user,
+            is_partial):
+        # Arrange
+        user_client, cat_owner = auto_login_user()
+        token = AccessToken.for_user(cat_owner)
+        cat_data = {
+            "name": "Bill Murray",
+            "age": "299",
+            'description': "Such a funny cat.",
+            "color": precreated_colors[0],
+            "breed": precreated_breeds[0],
+            "owner": cat_owner
+        }
+        new_cat_data = {
+            "age": 280  # Only updating the age for PATCH
+        }
+        cat_on_update = self.CatModel.objects.create(**cat_data)
+        url = f'{self.BASE_URL}{cat_on_update.id}/'
+
+        # Act
+        if is_partial:  # PATCH request
+            response = user_client.patch(
+                url, new_cat_data, HTTP_AUTHORIZATION=f'Bearer {token}')
+        else:
+            response = user_client.put(
+                url, {**cat_data, **new_cat_data}, HTTP_AUTHORIZATION=f'Bearer {token}')
+        # Assert
+        assert response.status_code == 200, 'User must be able to update his own cat'

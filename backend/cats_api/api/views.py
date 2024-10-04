@@ -1,9 +1,8 @@
-from api.permissions import IsStaffOrReadonly
-from api.serializers import BreedSerializer, CatSerializer
 from api.filters import CatFilter
+from api.permissions import IsOwnerOrIsStaffOrReadOnly, IsStaffOrReadonly
+from api.serializers import BreedSerializer, CatSerializer
 from cats.models import Breed, Cat
 from rest_framework import mixins, viewsets
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
 
 class BreedViewSet(mixins.ListModelMixin,
@@ -29,6 +28,7 @@ class BreedViewSet(mixins.ListModelMixin,
 class CatsViewSet(mixins.ListModelMixin,
                   mixins.RetrieveModelMixin,
                   mixins.CreateModelMixin,
+                  mixins.UpdateModelMixin,
                   viewsets.GenericViewSet):
     """
     View set that process requests related to cats instances.
@@ -41,9 +41,12 @@ class CatsViewSet(mixins.ListModelMixin,
 
     queryset = Cat.objects.all()
     serializer_class = CatSerializer
-    permission_classes = (IsAuthenticatedOrReadOnly, )
-    http_method_names = ['get', 'post']
+    permission_classes = (IsOwnerOrIsStaffOrReadOnly, )
+    http_method_names = ['get', 'post', 'put', 'patch']
     filterset_class = CatFilter
 
     def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+    def perform_update(self, serializer):
         serializer.save(owner=self.request.user)

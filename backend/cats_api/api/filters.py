@@ -1,5 +1,5 @@
-from django_filters import rest_framework as filters
 from cats.models import Cat
+from django_filters import rest_framework as filters
 
 
 class CatFilter(filters.FilterSet):

@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from rest_framework.test import APIClient
 
@@ -24,7 +26,7 @@ def create_user(db, django_user_model, test_password):
     def make_user(**kwargs):
         kwargs['password'] = test_password
         if 'username' not in kwargs:
-            kwargs['username'] = 'username'
+            kwargs['username'] = str(uuid.uuid4())
         user = django_user_model.objects.create_user(**kwargs)
         return user
     return make_user
