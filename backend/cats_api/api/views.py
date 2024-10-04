@@ -29,6 +29,7 @@ class CatsViewSet(mixins.ListModelMixin,
                   mixins.RetrieveModelMixin,
                   mixins.CreateModelMixin,
                   mixins.UpdateModelMixin,
+                  mixins.DestroyModelMixin,
                   viewsets.GenericViewSet):
     """
     View set that process requests related to cats instances.
@@ -42,7 +43,7 @@ class CatsViewSet(mixins.ListModelMixin,
     queryset = Cat.objects.all()
     serializer_class = CatSerializer
     permission_classes = (IsOwnerOrIsStaffOrReadOnly, )
-    http_method_names = ['get', 'post', 'put', 'patch']
+    http_method_names = ['get', 'post', 'put', 'patch', 'delete']
     filterset_class = CatFilter
 
     def perform_create(self, serializer):

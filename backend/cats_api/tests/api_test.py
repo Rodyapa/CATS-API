@@ -435,6 +435,65 @@ class TestCatAPI:
                 url, new_cat_data, HTTP_AUTHORIZATION=f'Bearer {token}')
         else:
             response = user_client.put(
-                url, {**cat_data, **new_cat_data}, HTTP_AUTHORIZATION=f'Bearer {token}')
+                url, {**cat_data, **new_cat_data},
+                HTTP_AUTHORIZATION=f'Bearer {token}')
         # Assert
-        assert response.status_code == 200, 'User must be able to update his own cat'
+        assert response.status_code == 200, (
+            'User must be able to update his own cat')
+
+    @pytest.mark.parametrize(
+        'user_client, expected_status_code, err_message',
+        [
+            ('client', 401, 'Anonymous cannot delete cat instance'),
+            ('api_staff_client_with_credentials', 204,
+             'Staff User can delete cat instance'),
+            ('api_client_with_credentials', 403,
+             'User cannot delete another user\'s cat instance')
+        ]
+    )
+    @pytest.mark.django_db
+    def test_delete_cat_instance(self, precreated_breeds, precreated_colors,
+                                 request, user_client, auto_login_user,
+                                 expected_status_code, err_message):
+        # Arrange
+        _, cat_owner = auto_login_user()
+        cat_data = {
+            "name": "Bill Murray",
+            "age": "299",
+            'description': "Such a funny cat.",
+            "color": precreated_colors[0],
+            "breed": precreated_breeds[0],
+            "owner": cat_owner
+        }
+        cat_on_delete = self.CatModel.objects.create(**cat_data)
+        url = f'{self.BASE_URL}{cat_on_delete.id}/'
+
+        # Act
+        user_client = request.getfixturevalue(user_client)
+        response = user_client.delete(url)
+        assert response.status_code == expected_status_code, err_message
+
+    @pytest.mark.django_db
+    def test_user_can_delete_his_own_cat(
+            self, precreated_breeds, precreated_colors, auto_login_user):
+        # Arrange
+        user_client, cat_owner = auto_login_user()
+        token = AccessToken.for_user(cat_owner)
+        cat_data = {
+            "name": "Bill Murray",
+            "age": "299",
+            'description': "Such a funny cat.",
+            "color": precreated_colors[0],
+            "breed": precreated_breeds[0],
+            "owner": cat_owner
+        }
+        cat_on_delete = self.CatModel.objects.create(**cat_data)
+        url = f'{self.BASE_URL}{cat_on_delete.id}/'
+
+        # Act
+        response = user_client.delete(
+            url,
+            HTTP_AUTHORIZATION=f'Bearer {token}')
+        # Assert
+        assert response.status_code == 204, (
+            'User must be able to delete his own cat')
