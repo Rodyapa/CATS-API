@@ -4,6 +4,10 @@ def assert200Response(response, message='200 Response must be returned'):
     assert response.status_code == 200, message
 
 
+def assert204Response(response, messsage='204 Response must be returned'):
+    assert response.status_code == 204, messsage
+
+
 def assert400Response(response, message='400 Response must be returned'):
     assert response.status_code == 400, message
 

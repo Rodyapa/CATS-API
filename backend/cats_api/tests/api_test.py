@@ -1,7 +1,8 @@
 import pytest
 from cats.models import Breed, Cat, Color
-
-from .test_utils import (assert200Response, assert400Response,
+from rest_framework_simplejwt.tokens import AccessToken
+from .test_utils import (assert200Response, assert204Response,
+                         assert400Response,
                          assertJSONFormatResponse, assertPaginatedResponse)
 
 
@@ -309,10 +310,59 @@ class TestCatAPI:
         assertPaginatedResponse(response, expected_count=expected_result_len,
                                 message=err_message)
 
+    @pytest.mark.parametrize(
+        'user_client, expected_status_code, err_message',
+        [
+            ('client', 401, 'Anonymous can not create new cat instance'),
+            ('api_client_with_credentials', 201,
+             'Authorized user can create')])
+    @pytest.mark.django_db
+    def test_creation_of_a_new_cat_instance(self,
+                                            request,
+                                            precreated_colors,
+                                            precreated_breeds,
+                                            user_client,
+                                            expected_status_code,
+                                            err_message):
+        # Arrange
+        url = self.BASE_URL
+        new_cat_data = {
+            "name": "Bill Murray",
+            "age": "299",
+            'description': "Such a funny cat.",
+            "color": precreated_colors[0].name,
+            "breed": precreated_breeds[0].name
+        }
+        # Act
+        # Get the actual fixture
+        user_client = request.getfixturevalue(user_client)
+        response = user_client.post(url, new_cat_data)
+        # Arrange
+        assert response.status_code == expected_status_code, err_message
 
-
-
-
+    def test_new_created_cat_instance_have_request_user_as_owner(
+            self, auto_login_user, precreated_colors,
+            precreated_breeds):
+        # Arrange
+        url = self.BASE_URL
+        new_cat_data = {
+            "name": "Bill Murray",
+            "age": "299",
+            'description': "Such a funny cat.",
+            "color": precreated_colors[0].name,
+            "breed": precreated_breeds[0].name
+        }
+        client, user = auto_login_user()
+        token = AccessToken.for_user(user)
+        # Act
+        response = client.post(url, new_cat_data,
+                               HTTP_AUTHORIZATION=f'Bearer {token}')
+        # Arrange
+        assert response.status_code == 201
+        new_cat_instance = self.CatModel.objects.last()
+        assert new_cat_instance.owner.id == user.id, (
+            'New cat instance must have request user as owner field value'
+        )
 
 
     """

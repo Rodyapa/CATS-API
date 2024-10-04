@@ -28,16 +28,22 @@ class BreedViewSet(mixins.ListModelMixin,
 
 class CatsViewSet(mixins.ListModelMixin,
                   mixins.RetrieveModelMixin,
+                  mixins.CreateModelMixin,
                   viewsets.GenericViewSet):
     """
     View set that process requests related to cats instances.
 
     - Get list of all instances
     - Get a specific cat instance
+    - Create a new cat instance
+
     """
 
     queryset = Cat.objects.all()
     serializer_class = CatSerializer
     permission_classes = (IsAuthenticatedOrReadOnly, )
-    http_method_names = ['get',]
+    http_method_names = ['get', 'post']
     filterset_class = CatFilter
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
