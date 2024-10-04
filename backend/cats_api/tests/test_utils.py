@@ -17,7 +17,7 @@ def assertJSONFormatResponse(response,
     assert response.headers['Content-Type'] == 'application/json', message
 
 
-def assertPaginatedResponse(response, expected_count,
+def assertPaginatedResponse(response, expected_count=None,
                             message='Response should contain paginated data'
                             ):
     assert 'results' in response.data, message

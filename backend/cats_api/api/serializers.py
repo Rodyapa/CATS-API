@@ -44,6 +44,7 @@ class ScoreSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'score',
+            'author',
             'pub_date',
         ]
         read_only_fields = ['id', 'author', 'pub_date']

@@ -1,5 +1,5 @@
 import pytest
-from cats.models import Breed, Cat, Color
+from cats.models import Breed, Cat, Color, Score
 from rest_framework_simplejwt.tokens import AccessToken
 
 from .test_utils import (assert200Response, assert204Response,
@@ -504,7 +504,7 @@ class TestScoreAPI:
     Test endpoints related to cats instances.
 
     Endpoints:
-    GET /api/cat/<cat_id>/scores/ Get all cats scores instances.
+    GET /api/cat/<cat_id>/score/ Get all cats scores instances.
     POST /api/cats/<cat_id>/score/ Make new cat score instance.
 
     GET /api/cats/<cat_id>/ Get specific cat score instances.
@@ -514,8 +514,7 @@ class TestScoreAPI:
 
     def test_cat_info_have_rating_field(self, client, precreated_cats):
         # Arrange
-        existing_cat_id = precreated_cats[0]['id']
-        url = f'/api/cats/{existing_cat_id}/'
+        url = '/api/cats/1/'
         # Act
         response = client.get(url)
         # Assert
@@ -524,3 +523,94 @@ class TestScoreAPI:
         assert 'rating' in response.data, (
             'Rating field must be in response data')
 
+    @pytest.mark.parametrize(
+        'user_client, expected_status_code, err_message',
+        [
+            ('client', 401, 'Anonymous can not add score'),
+            ('api_client_with_credentials', 201,
+             'Authorized user can add score')])
+    @pytest.mark.django_db
+    def test_add_score(self, request, precreated_cats,
+                       user_client, expected_status_code, err_message):
+        # Arrange
+        url = '/api/cats/1/scores/'
+        score = {
+            "score": 4
+        }
+        # Act
+        # Get the actual fixture
+        user_client = request.getfixturevalue(user_client)
+        response = user_client.post(url, score)
+        # Arrange
+        assert response.status_code == expected_status_code, err_message
+
+    @pytest.mark.django_db
+    def test_get_list_of_specific_cats_scores(
+            self, precreated_cats, client):
+        # Arrange
+        url = '/api/cats/1/scores/'
+        # Act
+        response = client.get(url)
+        # Arrange
+        assert200Response(response)
+        assertJSONFormatResponse(response)
+        assertPaginatedResponse(response)
+
+    @pytest.mark.parametrize(
+        'user_client, expected_status_code, err_message',
+        [
+            ('client', 401, 'Anonymous cannot update cat instance'),
+            ('api_staff_client_with_credentials', 200,
+             'Staff User can update cat instance'),
+            ('api_client_with_credentials', 403,
+             'User cannot update another user\'s cat instance')
+        ]
+    )
+    @pytest.mark.django_db
+    def test_update_score(self, precreated_cats,
+                          request, user_client, auto_login_user,
+                          expected_status_code, err_message,):
+        # Arrange
+        _, score_author = auto_login_user()
+        new_score_data = {
+            "score": 4
+        }
+        cat = Cat.objects.get(id=1)
+        score_on_update = Score.objects.create(
+            score=5,
+            cat=cat,
+            author=score_author,
+        )
+        url = f'/api/cats/1/scores/{score_on_update.id}/'
+        # Act
+        user_client = request.getfixturevalue(user_client)
+        response = user_client.put(url, new_score_data)
+        assert response.status_code == expected_status_code, err_message
+    
+    @pytest.mark.parametrize(
+        'user_client, expected_status_code, err_message',
+        [
+            ('client', 401, 'Anonymous cannot update cat instance'),
+            ('api_staff_client_with_credentials', 204,
+             'Staff User can update cat instance'),
+            ('api_client_with_credentials', 403,
+             'User cannot update another user\'s cat instance')
+        ]
+    )
+    @pytest.mark.django_db
+    def test_delete_score(self, precreated_cats,
+                          request, user_client, auto_login_user,
+                          expected_status_code, err_message,):
+        # Arrange
+        _, score_author = auto_login_user()
+        cat = Cat.objects.get(id=1)
+        score_on_delete = Score.objects.create(
+            score=5,
+            cat=cat,
+            author=score_author,
+        )
+        url = f'/api/cats/1/scores/{score_on_delete.id}/'
+        # Act
+        user_client = request.getfixturevalue(user_client)
+        response = user_client.delete(url)
+        assert response.status_code == expected_status_code, err_message
