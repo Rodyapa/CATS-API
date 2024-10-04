@@ -33,3 +33,24 @@ class IsOwnerOrIsStaffOrReadOnly(BasePermission):
                     and request.user.is_active
                     and (request.user == obj.owner or request.user.is_staff)
                     )
+
+
+class IsAuthorOrIsStaffOrReadOnly(BasePermission):
+    """
+    Every user can make safe request.
+    Only staff or author can edit or delete object instance.
+    """
+
+    def has_permission(self, request, view):
+        return bool(
+            request.method in SAFE_METHODS
+            or request.user.is_authenticated
+            and request.user.is_active
+        )
+
+    def has_object_permission(self, request, view, obj):
+        return bool(request.method in SAFE_METHODS
+                    or request.user.is_authenticated
+                    and request.user.is_active
+                    and (request.user == obj.author or request.user.is_staff)
+                    )

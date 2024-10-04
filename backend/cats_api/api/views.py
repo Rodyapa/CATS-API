@@ -1,8 +1,12 @@
 from api.filters import CatFilter
-from api.permissions import IsOwnerOrIsStaffOrReadOnly, IsStaffOrReadonly
-from api.serializers import BreedSerializer, CatSerializer
-from cats.models import Breed, Cat
-from rest_framework import mixins, viewsets
+from api.permissions import (IsAuthorOrIsStaffOrReadOnly,
+                             IsOwnerOrIsStaffOrReadOnly, IsStaffOrReadonly)
+from api.serializers import BreedSerializer, CatSerializer, ScoreSerializer
+from cats.models import Breed, Cat, Score
+from django.db.models import Avg
+from django.shortcuts import get_object_or_404
+from rest_framework import filters, mixins, viewsets
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
 
 class BreedViewSet(mixins.ListModelMixin,
@@ -51,3 +55,47 @@ class CatsViewSet(mixins.ListModelMixin,
 
     def perform_update(self, serializer):
         serializer.save(owner=self.request.user)
+
+    def get_queryset(self):
+        return Cat.objects.annotate(rating=Avg('scores__score'))
+
+
+class ScoreViewSet(viewsets.ModelViewSet):
+    """
+    View set that process requests related to cats instances.
+
+    - Add score to the specific cat
+    - Edit score of the specific cat
+    - Delete score of the specific cat
+    - Get all scores of specific cat
+    """
+
+    serializer_class = ScoreSerializer
+    http_method_names = ['get', 'post', 'put', 'delete']
+    permission_classes = (
+        IsAuthenticatedOrReadOnly,
+        IsAuthorOrIsStaffOrReadOnly,
+    )
+    filter_backends = (filters.OrderingFilter,)
+    ordering = ('pub_date',)
+
+    def get_cat(self):
+        cat = get_object_or_404(Cat, id=self.kwargs['cat_id'])
+        return cat
+
+    def get_queryset(self):
+        return self.get_cat().scores.all()
+
+    def perform_create(self, serializer):
+        serializer.save(
+            author=self.request.user,
+            cat=self.get_cat()
+        )
+
+    def get_serializer_context(self):
+        return {
+            'request': self.request,
+            'format': self.format_kwarg,
+            'view': self,
+            'cat_id': self.kwargs['cat_id'],
+        }

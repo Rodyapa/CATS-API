@@ -1,4 +1,5 @@
-from cats.models import Breed, Cat
+from api.validators import OnlyOneScorePerCatValidator
+from cats.models import Breed, Cat, Score
 from django.conf import settings
 from rest_framework import serializers
 
@@ -25,7 +26,27 @@ class CatSerializer(serializers.ModelSerializer):
     breed = serializers.StringRelatedField()
     color = serializers.StringRelatedField()
     owner = serializers.StringRelatedField()
+    rating = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Cat
-        fields = '__all__'
+        fields = ["id", "name", "age", "breed",
+                  "color", "description", "owner",
+                  "rating"]
+
+
+class ScoreSerializer(serializers.ModelSerializer):
+    """Serializer for Scores."""
+    author = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Score
+        fields = [
+            'id',
+            'score',
+            'pub_date',
+        ]
+        read_only_fields = ['id', 'author', 'pub_date']
+        validators = [
+            OnlyOneScorePerCatValidator(),
+        ]

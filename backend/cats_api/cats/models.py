@@ -1,7 +1,7 @@
 from cats.constants import DESCRIPTION_MAX_LENGTH, MAX_CAT_AGE, MAX_NAME
 from cats.validators import TextValidator, TitleValidator
 from django.contrib.auth import get_user_model
-from django.core.validators import MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 UserModel = get_user_model()
@@ -106,3 +106,38 @@ class Color(models.Model):
     def save(self, *args, **kwargs) -> None:
         self.name = self.name.lower()
         return super().save(*args, **kwargs)
+
+
+class Score(models.Model):
+    """Model for scores of cats."""
+    cat = models.ForeignKey(
+        Cat,
+        on_delete=models.CASCADE,
+        related_name='scores',
+        verbose_name='Кот'
+    )
+    author = models.ForeignKey(
+        verbose_name='Пользователь',
+        to=UserModel,
+        on_delete=models.CASCADE,
+    )
+    score = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(1, message='Оценка должна быть не меньше 1'),
+            MaxValueValidator(5, message='Оценка должна быть не более 5')],
+        verbose_name='Оценка'
+    )
+    pub_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Оценка'
+        verbose_name_plural = 'Оценка'
+        constraints = (
+            models.UniqueConstraint(
+                fields=['author', 'cat'],
+                name='unique_author_title',
+                violation_error_message=(
+                    'У кота не может быть больше одной от одного пользователя'
+                )
+            ),
+        )

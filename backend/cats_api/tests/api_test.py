@@ -497,3 +497,30 @@ class TestCatAPI:
         # Assert
         assert response.status_code == 204, (
             'User must be able to delete his own cat')
+
+
+class TestScoreAPI:
+    '''
+    Test endpoints related to cats instances.
+
+    Endpoints:
+    GET /api/cat/<cat_id>/scores/ Get all cats scores instances.
+    POST /api/cats/<cat_id>/score/ Make new cat score instance.
+
+    GET /api/cats/<cat_id>/ Get specific cat score instances.
+    PUT /api/cats/<cat_id>/ Replace specific cat score instance.
+    DELETE /api/cats/id/ Delete specific cat instance.
+    '''
+
+    def test_cat_info_have_rating_field(self, client, precreated_cats):
+        # Arrange
+        existing_cat_id = precreated_cats[0]['id']
+        url = f'/api/cats/{existing_cat_id}/'
+        # Act
+        response = client.get(url)
+        # Assert
+        assert200Response(response)
+        assertJSONFormatResponse
+        assert 'rating' in response.data, (
+            'Rating field must be in response data')
+
