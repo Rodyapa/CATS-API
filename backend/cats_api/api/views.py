@@ -1,5 +1,6 @@
 from api.permissions import IsStaffOrReadonly
 from api.serializers import BreedSerializer, CatSerializer
+from api.filters import CatFilter
 from cats.models import Breed, Cat
 from rest_framework import mixins, viewsets
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
@@ -39,3 +40,4 @@ class CatsViewSet(mixins.ListModelMixin,
     serializer_class = CatSerializer
     permission_classes = (IsAuthenticatedOrReadOnly, )
     http_method_names = ['get',]
+    filterset_class = CatFilter

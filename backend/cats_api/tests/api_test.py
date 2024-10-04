@@ -282,6 +282,39 @@ class TestCatAPI:
             assert response.data['name'] == expected_data['name'], (
                 'Response data must contains expected cat name')
 
+    @pytest.mark.parametrize(
+        'query_param_value, expected_result_len, err_message',
+        [
+            ('no such breed exists', 0,
+             'User must get empty result list'
+             'if no cats with such breed exist'),
+            ('ordinary_breed', 1,
+             'User must receive list of cats with breed '
+             'equals to query parameter value'),
+        ]
+    )
+    def test_get_list_of_cats_with_specific_breed(self, client,
+                                                  precreated_cats,
+                                                  precreated_breeds,
+                                                  query_param_value,
+                                                  expected_result_len,
+                                                  err_message):
+        # Arrange
+        breed = query_param_value
+        url = f'{self.BASE_URL}?breed={breed}'
+        # Act
+        response = client.get(url)
+        # Assert
+        assert200Response(response)
+        assertPaginatedResponse(response, expected_count=expected_result_len,
+                                message=err_message)
+
+
+
+
+
+
+
     """
     @pytest.mark.parametrize("url, expected_status_code, 'err_msg", [
         ('api/cats/1/', 200, 'User must be able to get specific cat info'),
