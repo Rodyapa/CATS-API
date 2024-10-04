@@ -100,7 +100,7 @@ class TestBreedAPI:
         assertJSONFormatResponse(response)
         assertPaginatedResponse(response, expected_count=3)
 
-        expected_names = [breed_info['name'] for breed_info
+        expected_names = [breed_instance.name for breed_instance
                           in precreated_breeds]
         returned_names = [breed['name'] for breed in response.data['results']]
         assert sorted(returned_names) == sorted(expected_names), (
@@ -258,9 +258,32 @@ class TestCatAPI:
             '"Owner" field must be string, not link or id'
         )
 
+    @pytest.mark.parametrize(
+        'url, expected_status, err_message',
+        [
+            ('/api/cats/1/', 200,
+             'User must be able to get specific cat info'),
+            ('/api/cats/9999/', 404,
+             'User must receive 404 error when trying to reach non-existent'
+             ' cat info'),
+        ]
+    )
+    def test_get_specific_cat_instance(self, client, precreated_cats,
+                                       url, expected_status,
+                                       err_message):
+        # Arrange
+        expected_data = precreated_cats[0]
+        # Act
+        response = client.get(url)
+        # Assert
+        assert response.status_code == expected_status, err_message
+        if expected_status == 200:
+            assertJSONFormatResponse(response)
+            assert response.data['name'] == expected_data['name'], (
+                'Response data must contains expected cat name')
 
     """
-    @pytest.mark.parametrize("url, expected_status_code, err_msg", [
+    @pytest.mark.parametrize("url, expected_status_code, 'err_msg", [
         ('api/cats/1/', 200, 'User must be able to get specific cat info'),
         ('api/cats/9999/', 404, 'User must get 404 error when'
                               'trying to get non-existing cat')

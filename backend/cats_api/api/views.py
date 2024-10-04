@@ -26,11 +26,13 @@ class BreedViewSet(mixins.ListModelMixin,
 
 
 class CatsViewSet(mixins.ListModelMixin,
+                  mixins.RetrieveModelMixin,
                   viewsets.GenericViewSet):
     """
     View set that process requests related to cats instances.
 
     - Get list of all instances
+    - Get a specific cat instance
     """
 
     queryset = Cat.objects.all()

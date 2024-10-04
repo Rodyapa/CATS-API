@@ -1,7 +1,7 @@
 import csv
 import os
 
-from cats.models import Color, Cat, Breed
+from cats.models import Breed, Cat, Color
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
