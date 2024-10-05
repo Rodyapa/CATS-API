@@ -2,7 +2,7 @@ from api.filters import CatFilter
 from api.permissions import (IsAuthorOrIsStaffOrReadOnly,
                              IsOwnerOrIsStaffOrReadOnly, IsStaffOrReadonly)
 from api.serializers import BreedSerializer, CatSerializer, ScoreSerializer
-from cats.models import Breed, Cat, Score
+from cats.models import Breed, Cat
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, mixins, viewsets

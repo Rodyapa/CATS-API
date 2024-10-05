@@ -2,13 +2,13 @@ import pytest
 from cats.models import Breed, Cat, Color, Score
 from rest_framework_simplejwt.tokens import AccessToken
 
-from .test_utils import (assert200Response, assert204Response,
+from .test_utils import (assert200Response,
                          assert400Response, assertJSONFormatResponse,
                          assertPaginatedResponse)
 
 
 @pytest.fixture
-def precreated_breeds():
+def precreated_breeds(db):
     '''
     Create three breed instances and returns breed instances.
     '''
@@ -26,7 +26,7 @@ def precreated_breeds():
 
 
 @pytest.fixture
-def precreated_colors():
+def precreated_colors(db):
     '''
     Create three colors instances and returns color instances.
     '''
@@ -44,7 +44,7 @@ def precreated_colors():
 
 
 @pytest.fixture
-def precreated_cats(create_user, precreated_breeds, precreated_colors):
+def precreated_cats(db, create_user, precreated_breeds, precreated_colors):
     '''
     Create three cat instances and return theirs info as list of dicts.
     '''
@@ -74,7 +74,7 @@ def precreated_cats(create_user, precreated_breeds, precreated_colors):
         for cat_info in cats_infos
     ]
     Cat.objects.bulk_create(cats)
-    return cats_infos
+    return [{'id': cat.id, 'name': cat.name} for cat in cats]
 
 
 class TestBreedAPI:
@@ -116,6 +116,7 @@ class TestBreedAPI:
             ("api_staff_client_with_credentials", 201),
         ]
     )
+    @pytest.mark.django_db
     def test_only_staff_member_can_create_breed_instance(
             self, user_client, expected_status, request):
         # Arrange
@@ -137,6 +138,7 @@ class TestBreedAPI:
          ('empty request load', {}),
          ]
     )
+    @pytest.mark.django_db
     def test_cannot_create_breed_instance_with_invalid_data(
             self, api_staff_client_with_credentials,
             precreated_breeds, post_data, error_reason):
@@ -161,9 +163,9 @@ class TestBreedAPI:
     )
     @pytest.mark.django_db
     def test_only_staff_member_can_delete_breed_instance(
-            self, user_client, expected_status, request, precreated_breeds):
+            self, user_client, expected_status, request, precreated_breeds,):
         # Arrange
-        url = f'{self.BASE_URL}1/'
+        url = f'{self.BASE_URL}{precreated_breeds[0].id}/'
         # Get the actual fixture
         user_client = request.getfixturevalue(user_client)
         # Act
@@ -184,7 +186,7 @@ class TestBreedAPI:
         self, user_client, expected_status, request, precreated_breeds
     ):
         # Arrange
-        url = f'{self.BASE_URL}1/'
+        url = f'{self.BASE_URL}{precreated_breeds[0].id}/'
         data = {
             'name': 'new_breed',
         }
@@ -213,6 +215,7 @@ class TestCatAPI:
     BASE_URL = '/api/cats/'
     CatModel = Cat
 
+    @pytest.mark.django_db
     def test_get_list_of_cat_instances(self, client, precreated_cats):
         # Arrange
         url = self.BASE_URL
@@ -228,6 +231,7 @@ class TestCatAPI:
         assert sorted(returned_names) == sorted(expected_names), (
             'Returned cat names do not match expected ones')
 
+    @pytest.mark.django_db
     def test_owner_field_is_string(self, client, precreated_cats):
         '''Test that owner field in each instance of cat returns as a string'''
         # Arrange
@@ -244,6 +248,7 @@ class TestCatAPI:
             '"Owner" field must be string, not link or id'
         )
 
+    @pytest.mark.django_db
     def test_color_field_is_string(self, client, precreated_cats):
         '''Test that color field in each instance of cat returns as a string'''
         # Arrange
@@ -263,17 +268,23 @@ class TestCatAPI:
     @pytest.mark.parametrize(
         'url, expected_status, err_message',
         [
-            ('/api/cats/1/', 200,
+            ('existing_url', 200,
              'User must be able to get specific cat info'),
-            ('/api/cats/9999/', 404,
+            ('non-existing url', 404,
              'User must receive 404 error when trying to reach non-existent'
              ' cat info'),
         ]
     )
+    @pytest.mark.django_db
     def test_get_specific_cat_instance(self, client, precreated_cats,
                                        url, expected_status,
                                        err_message):
         # Arrange
+        if url == 'existing_url':
+            cat_id = precreated_cats[0]['id']
+            url = f'/api/cats/{cat_id}/'
+        else:
+            url = '/api/cats/9999/'
         expected_data = precreated_cats[0]
         # Act
         response = client.get(url)
@@ -295,6 +306,7 @@ class TestCatAPI:
              'equals to query parameter value'),
         ]
     )
+    @pytest.mark.django_db
     def test_get_list_of_cats_with_specific_breed(self, client,
                                                   precreated_cats,
                                                   precreated_breeds,
@@ -512,9 +524,11 @@ class TestScoreAPI:
     DELETE /api/cats/id/ Delete specific cat instance.
     '''
 
+    @pytest.mark.django_db
     def test_cat_info_have_rating_field(self, client, precreated_cats):
         # Arrange
-        url = '/api/cats/1/'
+        cat_id = Cat.objects.get(id=precreated_cats[0]['id']).id
+        url = f'/api/cats/{cat_id}/'
         # Act
         response = client.get(url)
         # Assert
@@ -533,7 +547,8 @@ class TestScoreAPI:
     def test_add_score(self, request, precreated_cats,
                        user_client, expected_status_code, err_message):
         # Arrange
-        url = '/api/cats/1/scores/'
+        cat_id = Cat.objects.get(id=precreated_cats[0]['id']).id
+        url = f'/api/cats/{cat_id}/scores/'
         score = {
             "score": 4
         }
@@ -548,7 +563,8 @@ class TestScoreAPI:
     def test_get_list_of_specific_cats_scores(
             self, precreated_cats, client):
         # Arrange
-        url = '/api/cats/1/scores/'
+        cat_id = Cat.objects.get(id=precreated_cats[0]['id']).id
+        url = f'/api/cats/{cat_id}/scores/'
         # Act
         response = client.get(url)
         # Arrange
@@ -575,13 +591,13 @@ class TestScoreAPI:
         new_score_data = {
             "score": 4
         }
-        cat = Cat.objects.get(id=1)
+        cat = Cat.objects.get(id=precreated_cats[0]['id'])
         score_on_update = Score.objects.create(
             score=5,
             cat=cat,
             author=score_author,
         )
-        url = f'/api/cats/1/scores/{score_on_update.id}/'
+        url = f'/api/cats/{cat.id}/scores/{score_on_update.id}/'
         # Act
         user_client = request.getfixturevalue(user_client)
         response = user_client.put(url, new_score_data)
@@ -603,13 +619,13 @@ class TestScoreAPI:
                           expected_status_code, err_message,):
         # Arrange
         _, score_author = auto_login_user()
-        cat = Cat.objects.get(id=1)
+        cat = Cat.objects.get(id=precreated_cats[0]['id'])
         score_on_delete = Score.objects.create(
             score=5,
             cat=cat,
             author=score_author,
         )
-        url = f'/api/cats/1/scores/{score_on_delete.id}/'
+        url = f'/api/cats/{cat.id}/scores/{score_on_delete.id}/'
         # Act
         user_client = request.getfixturevalue(user_client)
         response = user_client.delete(url)

@@ -32,3 +32,19 @@ services:
       - static:/staticfiles/
     ports:
       - 8070:80
+    
+  test:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    command: sh -c "cd cats_api && pytest --maxfail=1 tests/"
+    volumes:
+      - static:/backend_static
+    environment:
+      - DJANGO_SETTINGS_MODULE=cats_api.settings
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    entrypoint: [""]

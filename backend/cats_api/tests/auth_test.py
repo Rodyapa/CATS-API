@@ -6,7 +6,7 @@ def user_tokens(api_client, create_user, test_password):
     '''Log in the user and store the refresh token.'''
     # Arrange
     url = '/api/auth/jwt/create/'
-    create_user()
+    create_user(username='username')
     user_credentials = {
         'username': 'username',
         'password': test_password,
@@ -28,7 +28,7 @@ def test_token_create(api_client, create_user, test_password):
     '''Test JWT token creation.'''
     # Arrange
     url = '/api/auth/jwt/create/'
-    create_user()
+    create_user(username='username')
     user_credentials = {
         'username': 'username',
         'password': test_password,
