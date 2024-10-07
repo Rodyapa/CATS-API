@@ -30,10 +30,6 @@ sudo docker compose -f docker-compose.yml -d
 ```
 http://127.0.0.1:8070/api/...
 ```
-## Запуском тестов:
-Запуск тестов из корневой директории проекта
-```
-
 ## Запустить тесты:
 ```
 sudo docker compose run --rm test
