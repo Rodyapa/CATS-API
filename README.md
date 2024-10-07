@@ -35,8 +35,9 @@ http://127.0.0.1:8070/api/...
 sudo docker compose run --rm test
 ```
 ## Технологии:
-    *Python
-    *Django
-    *Django REST framework
-    *Swagger OpenAPI Docs
-    *pytest library 
+    * Python
+    * Django
+    * Django REST framework
+    * Docker
+    * Swagger OpenAPI Docs
+    * pytest library 
